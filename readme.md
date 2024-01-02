@@ -20,7 +20,7 @@ Nextflow pipeline for RNAseq data analysis which uses kallisto for transcriptome
 
 ## Read **Quality Control**
 
-1 - qc_reads.nf    - pre-qc reports
+1 - qc_reads.nf    - pre-qc reports\
 2 - qc_processing.nf - trimming, adapter removal and filtering of reads.
 
 ### **qc_reads.nf**
