@@ -43,7 +43,7 @@ process alignment {
   def index_name="${bwa_index[0]}";
   def new_name=index_name.replaceAll(".amb","");
   """
-  bwa mem "${new_name}" "${reads[0]}" "${reads[1]}" > "${sample_id}.sam"
+  bwa mem -t ${task.cpus} "${new_name}" "${reads[0]}" "${reads[1]}" | samtools view -b -hS -@ ${task.cpus} -o "${sample_id}.bam" -
   """
 }
 
