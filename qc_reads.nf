@@ -4,7 +4,7 @@
 // reads should be in rawReads folder in basedir(where thi script is present) and in format "name_[1/2].fq.gz"
 //  fastqc and multiqc should be in conda environment.
 
-params.reads="$projectDir/rawReads/*_{1,2}.fq.gz"
+params.reads="$projectDir/rawReads/*_{1,2}.fastq.gz"
 params.outdir="$projectDir/qcReport"
 
 // #location of programs please update
