@@ -27,7 +27,6 @@ log.info """\
 
 
 process alignment {
-  publishDir "${params.outdir}/bam", mode: 'copy'
   cpus 4
   conda "${params.prgms}"
   
@@ -37,7 +36,7 @@ process alignment {
   path bwa_index
   
   output:
-  path "${sample_id}.sam"
+  path "${sample_id}.bam"
 
   script:
   def index_name="${bwa_index[0]}";
@@ -48,9 +47,22 @@ process alignment {
 }
 
 
-// process markdupbam {
-  
-// }
+ process markdupbam {
+  publishDir "${params.outdir}/bamfile", mode: 'copy'
+  conda "${params.prgms}"
+  cpus 4
+
+  input:
+  path bamfile
+
+  output:
+  path "${bamfile.baseName}_markdup.bam"
+
+  script:
+  """
+  samtools sort -n -@ ${task.cpus} "${bamfile}" | samtools fixmate -@ ${task.cpus} - | samtools sort -@ ${task.cpus} - | samtools markdup - "${bamfile.baseName}_markdup.bam"
+  """
+ }
 
 // process bamsummary {
 
@@ -68,5 +80,6 @@ workflow {
   channel.fromFilePairs(params.reads, checkIfExists: true).set{ read_ch }
   channel.value(params.seed).set{ seed_ch }
   bwa_index = channel.fromPath(params.index, checkIfExists: true).collect()
-  align_ch = alignment(read_ch,seed_ch,bwa_index).view()
+  align_ch = alignment(read_ch,seed_ch,bwa_index)
+  markdup_ch = markdupbam(align_ch)
 }
