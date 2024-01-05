@@ -47,8 +47,7 @@ process alignment {
 }
 
 
- process markdupbam {
-  publishDir "${params.outdir}/bamfile", mode: 'copy'
+process bam_nsort {
   conda "${params.prgms}"
   cpus 4
 
@@ -56,13 +55,66 @@ process alignment {
   path bamfile
 
   output:
-  path "${bamfile.baseName}_markdup.bam"
+  path "${bamfile.baseName}_nsort.bam"
+  
+  script:
+  """
+  samtools sort -@ ${task.cpus} -n -o "${bamfile.baseName}_nsort.bam" "${bamfile}"
+  """
+}
+
+
+process bam_fixmate {
+  conda "${params.prgms}"
+  cpus 4
+
+  input:
+  path nsortbam
+  
+  output:
+  path "${nsortbam.baseName}_fixmate.bam"
+  
+  script:
+  """
+  samtools fixmate "${nsortbam}" "${nsortbam.baseName}_fixmate.bam" 
+  """
+}
+
+
+process bam_psort {
+  conda "${params.prgms}"
+  cpus 4
+
+  input:
+  path fixmatebam
+  
+  output:
+  path "${fixmatebam.baseName}_psort.bam"
+  
+  script:
+  """
+  samtools sort -@ ${task.cpus} -o "${fixmatebam.baseName}_psort.bam" "${fixmatebam}"
+  """
+}
+
+
+process markdupbam {
+  publishDir "${params.outdir}/bamfile", mode: 'copy'
+  conda "${params.prgms}"
+  cpus 4
+
+  input:
+  path psortbam
+
+  output:
+  path "${psortbam.baseName}_markdup.bam"
 
   script:
   """
-  samtools sort -n -@ ${task.cpus} "${bamfile}" | samtools fixmate -@ ${task.cpus} - | samtools sort -@ ${task.cpus} - | samtools markdup - "${bamfile.baseName}_markdup.bam"
+  samtools markdup -@ ${task.cpus} "${psortbam}" "${psortbam.baseName}_markdup.bam"
   """
  }
+
 
 // process bamsummary {
 
@@ -81,5 +133,8 @@ workflow {
   channel.value(params.seed).set{ seed_ch }
   bwa_index = channel.fromPath(params.index, checkIfExists: true).collect()
   align_ch = alignment(read_ch,seed_ch,bwa_index)
-  markdup_ch = markdupbam(align_ch)
+  nsort_ch = bam_nsort(align_ch)
+  fixmate_ch = bam_fixmate(nsort_ch)
+  psort_ch = bam_psort(fixmate_ch)
+  markdup_ch = markdupbam(psort_ch)
 }
